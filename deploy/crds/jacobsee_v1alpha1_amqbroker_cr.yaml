@@ -1,0 +1,9 @@
+apiVersion: jacobsee.com/v1alpha1
+kind: AMQBroker
+metadata:
+  name: example-amqbroker
+spec:
+  # Add fields here
+  # size: 3
+  username: test_user
+  password: test_pass

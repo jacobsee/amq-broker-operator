@@ -15,8 +15,7 @@ spec:
       serviceAccountName: amq-broker-operator
       containers:
         - name: amq-broker-operator
-          # Replace this with the built image name
-          image: REPLACE_IMAGE
+          image: docker.io/jacobsee/amq-operator 
           ports:
           - containerPort: 60000
             name: metrics
