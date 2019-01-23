@@ -171,7 +171,7 @@ func createRouteIfNotExists(route *routev1.Route, r *ReconcileAMQBroker) (err er
 	found := &routev1.Route{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: route.Name, Namespace: route.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Service", "Route.Namespace", route.Namespace, "Route.Name", route.Name)
+		reqLogger.Info("Creating a new Route", "Route.Namespace", route.Namespace, "Route.Name", route.Name)
 		err = r.client.Create(context.TODO(), route)
 		if err != nil {
 			return err
@@ -181,7 +181,7 @@ func createRouteIfNotExists(route *routev1.Route, r *ReconcileAMQBroker) (err er
 	} else if err != nil {
 		return err
 	}
-	reqLogger.Info("Skip reconcile: Service already exists", "Service.Namespace", found.Namespace, "Service.Name", found.Name)
+	reqLogger.Info("Skip reconcile: Route already exists", "Route.Namespace", found.Namespace, "Route.Name", found.Name)
 	return nil
 }
 
