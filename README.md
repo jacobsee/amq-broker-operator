@@ -2,6 +2,17 @@
 
 **THIS IS NOT READY FOR REAL USE IN ANY WAY, SHAPE, OR FORM.**
 
+## Debugging
+
+If you just want to try this out quickly (or for debugging purposes), you can use this to quickly run the operator locally while still pointing it at your remote OpenShift cluster.
+
+(Note that you will not see any deployments of the operator running in the cluster using this method.)
+
+```
+export OPERATOR_NAME=amq-broker-operator
+operator-sdk up local --namespace=jasee
+```
+
 ## Compiling
 
 ```
@@ -55,4 +66,4 @@ You're right, I haven't added those things, you should give it a try. I just did
 
 `pkg/apis/jacobsee/v1alpha1/amqbroker_types.go`
 
-`pkg/controller/amqbroker/amqbroker_controller.go`
+`pkg/controller/amqbroker/amqbroker_controller.go`uMBy9M2P6A2xS3

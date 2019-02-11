@@ -112,7 +112,7 @@ func (r *ReconcileAMQBroker) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	// Check if this deployment & service already exist
-	deploymentCreated := createDeploymentIfNotExists(deployment, r)
+	deploymentCreated := createOrUpdateDeployment(instance, deployment, r)
 	serviceCreated := createServiceIfNotExists(service, r)
 	routeCreated := createRouteIfNotExists(route, r)
 
@@ -128,12 +128,12 @@ func (r *ReconcileAMQBroker) Reconcile(request reconcile.Request) (reconcile.Res
 	return reconcile.Result{}, nil
 }
 
-func createDeploymentIfNotExists(deployment *appsv1.Deployment, r *ReconcileAMQBroker) (err error) {
+func createOrUpdateDeployment(cr *jacobseev1alpha1.AMQBroker, deployment *appsv1.Deployment, r *ReconcileAMQBroker) (err error) {
 	reqLogger := log.WithValues("Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
 	found := &appsv1.Deployment{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Deployment", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
+		reqLogger.Info("Reconciled: Creating a new Deployment", "Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
 		err = r.client.Create(context.TODO(), deployment)
 		if err != nil {
 			return err
@@ -143,7 +143,24 @@ func createDeploymentIfNotExists(deployment *appsv1.Deployment, r *ReconcileAMQB
 	} else if err != nil {
 		return err
 	}
-	reqLogger.Info("Skip reconcile: Deployment already exists", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+	shouldUpdateExisting := false
+	for index, envVar := range found.Spec.Template.Spec.Containers[0].Env {
+		if envVar.Name == "AMQ_USER" && envVar.Value != cr.Spec.Username {
+			found.Spec.Template.Spec.Containers[0].Env[index].Value = cr.Spec.Username
+			shouldUpdateExisting = true
+		}
+		if envVar.Name == "AMQ_PASSWORD" && envVar.Value != cr.Spec.Password {
+			found.Spec.Template.Spec.Containers[0].Env[index].Value = cr.Spec.Password
+			shouldUpdateExisting = true
+		}
+	}
+	if shouldUpdateExisting {
+		r.client.Update(context.TODO(), found)
+		reqLogger.Info("Reconciled: Deployment already existed but a spec update was required", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+	} else {
+		reqLogger.Info("Skip reconcile: Deployment already exists and is up-to-date", "Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+	}
+
 	return nil
 }
 
@@ -152,7 +169,7 @@ func createServiceIfNotExists(service *corev1.Service, r *ReconcileAMQBroker) (e
 	found := &corev1.Service{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: service.Name, Namespace: service.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Service", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
+		reqLogger.Info("Reconciled: Creating a new Service", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
 		err = r.client.Create(context.TODO(), service)
 		if err != nil {
 			return err
@@ -171,7 +188,7 @@ func createRouteIfNotExists(route *routev1.Route, r *ReconcileAMQBroker) (err er
 	found := &routev1.Route{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: route.Name, Namespace: route.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Route", "Route.Namespace", route.Namespace, "Route.Name", route.Name)
+		reqLogger.Info("Reconciled: Creating a new Route", "Route.Namespace", route.Namespace, "Route.Name", route.Name)
 		err = r.client.Create(context.TODO(), route)
 		if err != nil {
 			return err
@@ -224,6 +241,7 @@ func newDeploymentForCR(cr *jacobseev1alpha1.AMQBroker) *appsv1.Deployment {
 							},
 						},
 						Env: []corev1.EnvVar{
+							// NOTE: These should really be managed using proper secrets for a production operator.
 							{
 								Name:  "AMQ_USER",
 								Value: cr.Spec.Username,
