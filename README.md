@@ -58,6 +58,10 @@ You should see a deployment `example-amqbroker-deployment`, a service `example-a
 
 If you access the route, it should take you to the AMQ management console (after a few minutes of booting up... it's not instantaneous).
 
+## Testing
+
+Unit testing of the reconcile loop can be ran with `go test ./pkg/controller/amqbroker`. This stands up a fake kube API for our operator to operate against, creates an `AMQBroker` custom resource, and triggers a reconcile event on that resource.
+
 ## But this doesn't have persistence/TLS/other good stuff
 
 You're right, I haven't added those things, you should give it a try. I just did this to quickly learn about operators.
